@@ -1,29 +1,55 @@
-import React, { useEffect } from "react";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
-const App = () => {
-  useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true });
-  }, []);
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition,
-  } = useSpeechRecognition();
+import React, { useState } from "react";
 
-  if (!browserSupportsSpeechRecognition) {
-    return <span>Browser doesn't support speech recognition.</span>;
-  }
-  // useEffect(() => {}, []);
+const App = () => {
+  const [isSupported, setIsSupported] = useState(true);
+  const [transcript, setTranscript] = useState("");
+  const [listening, setListening] = useState(false);
+
+  const startRecognition = () => {
+    const recognition = new window.webkitSpeechRecognition();
+    recognition.lang = "en-US"; // Set language to English
+
+    recognition.onstart = () => {
+      setListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      console.log("Transcript:", transcript);
+      setTranscript(transcript);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    recognition.onerror = () => {
+      setIsSupported(false);
+    };
+
+    recognition.start();
+  };
+
+  const stopRecognition = () => {
+    window.webkitSpeechRecognition.abort();
+    setListening(false);
+  };
+
   return (
     <div>
-      <p>Microphone: {listening ? "on" : "off"}</p>
-      <button onClick={SpeechRecognition.startListening}>Start</button>
-      <button onClick={SpeechRecognition.stopListening}>Stop</button>
-      <button onClick={resetTranscript}>Reset</button>
-      <p>{transcript}</p>
+      {isSupported ? (
+        <div>
+          <button onClick={startRecognition} disabled={listening}>
+            Start Listening
+          </button>
+          <button onClick={stopRecognition} disabled={!listening}>
+            Stop Listening
+          </button>
+          <div id="result">{transcript}</div>
+        </div>
+      ) : (
+        <div>Speech recognition is not supported in this browser.</div>
+      )}
     </div>
   );
 };
